@@ -561,15 +561,13 @@ package final class GlobalProductPlan: GlobalTargetInfoProvider
                     }
 
                     let linkedDependencies: [LinkedDependency] = linkageGraph.dependencies(of: configuredTarget).map { .direct($0) }
-                    let transitiveStaticDependencies: [LinkedDependency] = linkedDependencies.flatMap { origin in
-                        transitiveClosure([origin.target]) {
-                            let settings = planRequest.buildRequestContext.getCachedSettings($0.parameters, target: $0.target)
-                            guard !Self.dynamicMachOTypes.contains(settings.globalScope.evaluate(BuiltinMacros.MACH_O_TYPE)) else {
-                                return []
-                            }
-                            return linkageGraph.dependencies(of: $0)
-                        }.0.map { .staticTransitive($0) }
-                    }
+                    let transitiveStaticDependencies: [LinkedDependency] = transitiveClosure(linkedDependencies.map(\.target)) {
+                        let settings = planRequest.buildRequestContext.getCachedSettings($0.parameters, target: $0.target)
+                        guard !Self.dynamicMachOTypes.contains(settings.globalScope.evaluate(BuiltinMacros.MACH_O_TYPE)) else {
+                            return []
+                        }
+                        return linkageGraph.dependencies(of: $0)
+                    }.0.map { .staticTransitive($0) }
 
                     directlyLinkedDependenciesByTarget[configuredTarget] = OrderedSet(linkedDependencies + transitiveStaticDependencies + (bundleLoaderByTarget[configuredTarget].map { [.bundleLoader($0)] } ?? []))
                     impartedBuildPropertiesByTarget[configuredTarget] = dependencies.compactMap { $0.getImpartedBuildProperties(using: planRequest) }
