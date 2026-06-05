@@ -190,13 +190,13 @@ package final class GlobalProductPlan: GlobalTargetInfoProvider
 
     enum LinkedDependency: Hashable {
         case direct(ConfiguredTarget)
-        case staticTransitive(ConfiguredTarget, origin: ConfiguredTarget)
+        case staticTransitive(ConfiguredTarget)
         case bundleLoader(ConfiguredTarget)
 
         var target: ConfiguredTarget {
             switch self {
             case .direct(let target): return target
-            case .staticTransitive(let target, _): return target
+            case .staticTransitive(let target): return target
             case .bundleLoader(let target): return target
             }
         }
@@ -568,7 +568,7 @@ package final class GlobalProductPlan: GlobalTargetInfoProvider
                                 return []
                             }
                             return linkageGraph.dependencies(of: $0)
-                        }.0.map { .staticTransitive($0, origin: origin.target) }
+                        }.0.map { .staticTransitive($0) }
                     }
 
                     directlyLinkedDependenciesByTarget[configuredTarget] = OrderedSet(linkedDependencies + transitiveStaticDependencies + (bundleLoaderByTarget[configuredTarget].map { [.bundleLoader($0)] } ?? []))
